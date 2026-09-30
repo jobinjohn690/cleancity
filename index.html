@@ -168,7 +168,7 @@
         </div>
 
         <button class="btn btn-primary auth-submit" type="submit">Login</button>
-        <p class="auth-note">Demo authentication: your account is stored only in this browser.</p>
+        <p class="auth-note">Your account is securely stored in the CleanCity backend.</p>
       </form>
 
       <!-- REGISTER -->
@@ -208,7 +208,7 @@
         </div>
 
         <button class="btn btn-primary auth-submit" type="submit">Create Account</button>
-        <p class="auth-note">For a real deployment, connect this form to a secure backend/database instead of localStorage.</p>
+        <p class="auth-note">Your account is securely stored in the CleanCity backend.</p>
       </form>
     </div>
   </div>
@@ -711,9 +711,23 @@ function openIssue(id){
  document.getElementById('issueModal').classList.add('show');
 }
 function closeModal(){document.getElementById('issueModal').classList.remove('show')}
-function upvote(id){const r=reports.find(x=>x.id===id);r.votes++;save();openIssue(id);showToast('Upvote added')}
-function changeStatus(id){
- const r=reports.find(x=>x.id===id);const next=r.status==='Open'?'In Progress':r.status==='In Progress'?'Resolved':'Open';r.status=next;save();openIssue(id);renderHome();showToast(`Status changed to ${next}`);
+async function upvote(id){
+  try{
+    const data=await apiFetch('/reports/'+encodeURIComponent(id)+'/upvote',{method:'POST'});
+    const r=reports.find(x=>x.id===id); if(r) r.votes=data.votes;
+    openIssue(id); renderHome(); showToast('Upvote added');
+  }catch(err){showToast(err.message)}
+}
+async function changeStatus(id){
+  const r=reports.find(x=>x.id===id);
+  if(!r)return;
+  const next=r.status==='Open'?'In Progress':r.status==='In Progress'?'Resolved':'Open';
+  try{
+    const data=await apiFetch('/reports/'+encodeURIComponent(id)+'/status',{method:'PATCH',body:JSON.stringify({status:next})});
+    const i=reports.findIndex(x=>x.id===id); if(i>=0) reports[i]=data.report;
+    openIssue(id); renderHome(); renderReports(); renderAdmin(); renderQueue(); renderPerformance(); renderHeatmap();
+    showToast('Status changed to '+next);
+  }catch(err){showToast(err.message)}
 }
 
 
